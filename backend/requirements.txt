@@ -1,0 +1,57 @@
+# Core Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.3
+pydantic-settings>=2.1.0
+
+# Parlant Multi-Agent Framework
+parlant>=3.0.0
+
+# Database
+sqlalchemy>=2.0.25
+asyncpg>=0.29.0  # PostgreSQL async driver
+aiosqlite>=0.19.0  # SQLite async driver (fallback)
+alembic>=1.13.1
+pgvector>=0.2.5  # Vector similarity search for PostgreSQL
+
+# Vector Database
+# Using Qdrant (open-source, self-hosted, cost-effective)
+qdrant-client>=1.7.0
+# pinecone-client>=6.0.0  # Removed: Use Qdrant instead. Uncomment if SaaS solution needed
+
+# LLM Providers
+# OpenAI as primary provider (better ecosystem, embeddings API, cost-effective)
+openai>=1.10.0
+# Anthropic as backup (optional, better context understanding for specific use cases)
+anthropic>=0.8.1
+
+# Document Processing
+PyPDF2>=3.0.1
+python-docx>=1.1.0
+python-multipart>=0.0.6
+markdown>=3.5.2
+
+# Embeddings & NLP
+sentence-transformers>=2.3.1
+tiktoken>=0.5.2
+
+# Caching
+redis>=5.0.1
+hiredis>=2.3.2
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Utilities
+python-dotenv>=1.0.0
+httpx>=0.26.0
+aiofiles>=23.2.1
+
+# Monitoring & Logging
+loguru>=0.7.2
+prometheus-client>=0.19.0
+
+# Testing (optional)
+pytest>=7.4.4
+pytest-asyncio>=0.23.3
