@@ -74,7 +74,7 @@ readpilot/
 
 ## 开发文档
 
-- [功能规格](. specify/specs/001-core-reading-experience/spec.md)
+- [功能规格](.specify/specs/001-core-reading-experience/spec.md)
 - [技术方案](.specify/specs/001-core-reading-experience/plan.md)
 - [任务列表](.specify/specs/001-core-reading-experience/tasks.md)
 - [项目宪章](.specify/memory/constitution.md)
