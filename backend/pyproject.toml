@@ -1,0 +1,67 @@
+[project]
+name = "readpilot-backend"
+version = "0.1.0"
+description = "AI-powered reading companion backend"
+authors = [
+    {name = "SuperYing", email = "13975145507@163.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+]
+
+[project.scripts]
+dev = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+start = "uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+[tool.poetry]
+name = "readpilot-backend"
+version = "0.1.0"
+description = "AI-powered reading companion backend"
+authors = ["SuperYing <13975145507@163.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4"
+pytest-asyncio = "^1.0"
+ruff = "^0.8"
+mypy = "^1.13"
+
+[tool.poetry.scripts]
+dev = "scripts:dev"
+prod = "scripts:prod"
+test = "scripts:test"
+lint = "scripts:lint"
+format = "scripts:format"
+db-init = "scripts:db_init"
+db-migrate = "scripts:db_migrate"
+db-upgrade = "scripts:db_upgrade"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+addopts = ["-v", "--strict-markers", "--tb=short"]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

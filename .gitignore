@@ -53,6 +53,10 @@ backend/.env.local
 # Database
 *.db
 *.sqlite3
+data/documents/
+data/chroma/
+postgres_data/
+redis_data/
 
 # Docker
 .dockerignore
