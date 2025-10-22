@@ -88,8 +88,8 @@ clean:
 	@echo "✅ 清理完成!"
 
 db-init:
-	@echo "🗄️  初始化数据库..."
-	alembic init alembic
+	@echo "🗄️  初始化数据库 (创建所有表)..."
+	@python3 -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())" && echo "✅ 数据库初始化完成!"
 
 db-migrate:
 	@echo "🗄️  创建数据库迁移..."
@@ -98,11 +98,51 @@ db-migrate:
 
 db-upgrade:
 	@echo "⬆️  应用数据库迁移..."
-	alembic upgrade head
+	alembic upgrade head && echo "✅ 迁移完成!"
 
 db-downgrade:
 	@echo "⬇️  回滚数据库迁移..."
-	alembic downgrade -1
+	alembic downgrade -1 && echo "✅ 回滚完成!"
+
+db-history:
+	@echo "📜 查看迁移历史..."
+	alembic history
+
+db-current:
+	@echo "📍 当前数据库版本..."
+	alembic current
+
+db-reset:
+	@echo "⚠️  重置数据库 (删除所有数据)..."
+	@read -p "确认删除所有数据? [y/N]: " confirm; \
+	if [ "$$confirm" = "y" ]; then \
+		alembic downgrade base && alembic upgrade head && echo "✅ 数据库已重置!"; \
+	else \
+		echo "❌ 操作已取消"; \
+	fi
+
+# Redis 相关命令
+redis-cli:
+	@echo "🔴 连接 Redis CLI..."
+	redis-cli
+
+redis-ping:
+	@echo "🔴 测试 Redis 连接..."
+	@redis-cli ping && echo "✅ Redis 连接正常!"
+
+redis-flush:
+	@echo "⚠️  清空 Redis 缓存..."
+	@read -p "确认清空所有缓存? [y/N]: " confirm; \
+	if [ "$$confirm" = "y" ]; then \
+		redis-cli FLUSHALL && echo "✅ 缓存已清空!"; \
+	else \
+		echo "❌ 操作已取消"; \
+	fi
+
+# 测试基础设施
+test-setup:
+	@echo "🧪 测试 Phase 1 基础设施..."
+	python3 scripts/test_setup.py
 
 # Docker 相关命令
 docker-build:

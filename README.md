@@ -17,17 +17,29 @@ ReadPilot 是一个基于 AI 的智能阅读助手，通过理解用户阅读内
 ## 技术栈
 
 ### 前端
+
 - **框架**: Next.js 15 + React 19 + TypeScript 5.7
 - **UI**: Tailwind CSS 4.0 + Radix UI
 - **状态管理**: Zustand 5.0
 - **文档渲染**: react-pdf 9.0, epubjs
 
 ### 后端
+
 - **框架**: FastAPI 0.115 + Python 3.12
 - **数据库**: PostgreSQL 17 / SQLite 3.47
 - **AI**: Ollama (本地) / OpenAI / Anthropic
 - **向量数据库**: ChromaDB 0.5
 - **任务队列**: Celery 5.4 + Redis 7.4
+
+## 项目状态
+
+**当前阶段**: Phase 1 - 基础设施 🟡 (实现完成 68%，待验证)
+
+- ✅ 数据库模型和迁移配置
+- ✅ Redis 缓存管理
+- ✅ 文件存储和验证
+- ✅ API 客户端和状态管理
+- ⏳ 集成测试和服务验证
 
 ## 快速开始
 
@@ -37,27 +49,43 @@ ReadPilot 是一个基于 AI 的智能阅读助手，通过理解用户阅读内
 - Python 3.12+
 - Docker 27+
 - pnpm 9.14+
+- Poetry (Python 包管理器)
 
-### 开发环境
-
-1. 克隆项目
+### 一键启动 (推荐)
 
 ```bash
+# 1. 克隆项目
 git clone https://github.com/yourusername/readpilot.git
 cd readpilot
-```
 
-2. 启动开发环境
-
-```bash
+# 2. 启动基础服务 (PostgreSQL, Redis, Qdrant)
 docker-compose up -d
+
+# 3. 后端设置
+cd backend
+poetry install                    # 安装依赖
+cp .env.example .env             # 配置环境变量
+make db-init                     # 初始化数据库
+make dev                         # 启动后端服务
+
+# 4. 前端设置 (新终端)
+cd frontend
+pnpm install                     # 安装依赖
+cp .env.example .env.local       # 配置环境变量
+pnpm dev                         # 启动前端服务
 ```
 
-3. 访问应用
+### 详细设置指南
+
+- [后端设置](./backend/SETUP.md)
+- [前端设置](./frontend/SETUP.md)
+
+### 访问应用
 
 - 前端: http://localhost:3000
 - 后端 API: http://localhost:8000
 - API 文档: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
 ## 项目结构
 
@@ -74,10 +102,23 @@ readpilot/
 
 ## 开发文档
 
+### 设置与验证
+
+- [后端设置指南](./backend/SETUP.md) - 详细的后端配置说明
+- [前端设置指南](./frontend/SETUP.md) - 详细的前端配置说明
+
+### 规格文档
+
 - [功能规格](.specify/specs/001-core-reading-experience/spec.md)
 - [技术方案](.specify/specs/001-core-reading-experience/plan.md)
 - [任务列表](.specify/specs/001-core-reading-experience/tasks.md)
+- [Phase 1 检查清单](.specify/specs/001-core-reading-experience/phase1-checklist.md)
 - [项目宪章](.specify/memory/constitution.md)
+
+### 开发工具
+
+- 后端: `make help` - 查看所有可用命令
+- 前端: `pnpm run` - 查看所有可用脚本
 
 ## 许可证
 
