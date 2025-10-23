@@ -213,3 +213,13 @@ async def get_cache() -> CacheManager:
             ...
     """
     return cache_manager
+
+
+def get_cache_service() -> CacheManager:
+    """
+    获取缓存服务实例 (同步版本)
+
+    Returns:
+        CacheManager 实例
+    """
+    return cache_manager

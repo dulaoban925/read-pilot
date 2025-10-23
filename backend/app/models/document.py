@@ -49,8 +49,10 @@ class Document(Base, TimestampMixin):
 
     # Relationships
     user = relationship("User", back_populates="documents")
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
     annotations = relationship("Annotation", back_populates="document", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="document", cascade="all, delete-orphan")
+    chat_sessions = relationship("ChatSession", back_populates="document", cascade="all, delete-orphan")
     reading_sessions = relationship("ReadingSession", back_populates="document", cascade="all, delete-orphan")
     ai_summaries = relationship("AISummary", back_populates="document", cascade="all, delete-orphan")
 

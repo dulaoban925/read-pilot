@@ -46,7 +46,10 @@ async def init_db() -> None:
         AISummary,
         Annotation,
         ChatMessage,
+        ChatSession,
         Document,
+        DocumentChunk,
+        Message,
         ReadingSession,
         User,
     )

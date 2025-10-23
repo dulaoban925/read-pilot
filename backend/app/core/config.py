@@ -42,23 +42,42 @@ class Settings(BaseSettings):
         description="Redis connection URL"
     )
 
-    # Vector Database (Qdrant)
-    QDRANT_URL: str = Field(
-        default="http://localhost:6333",
-        description="Qdrant server URL"
+    # Vector Database (ChromaDB)
+    CHROMADB_PATH: str = Field(
+        default="./data/chromadb",
+        description="ChromaDB persistent storage path"
     )
-    QDRANT_COLLECTION_NAME: str = "readpilot_documents"
+    CHROMADB_COLLECTION_NAME: str = "document_chunks"
 
     # AI/LLM Configuration
     OPENAI_API_KEY: str = Field(default="", description="OpenAI API key")
     ANTHROPIC_API_KEY: str = Field(default="", description="Anthropic API key")
-    LLM_PROVIDER: Literal["openai", "anthropic", "ollama"] = "openai"
-    LLM_MODEL: str = "gpt-4o-mini"
+    QWEN_API_KEY: str = Field(default="", description="阿里云千问 API key")
+
+    # AI Provider Settings
+    PRIMARY_AI_PROVIDER: Literal["openai", "anthropic", "qwen"] = Field(
+        default="qwen",
+        description="Primary AI provider for LLM tasks"
+    )
+    FALLBACK_AI_PROVIDER: Literal["openai", "anthropic", "qwen"] = Field(
+        default="openai",
+        description="Fallback AI provider when primary fails"
+    )
+
+    LLM_PROVIDER: Literal["openai", "anthropic", "qwen"] = "qwen"
+    LLM_MODEL: str = "qwen-flash"
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_DIMENSION: int = 1536
 
     # File Upload
     MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
     ALLOWED_EXTENSIONS: List[str] = [".pdf", ".epub", ".txt", ".md", ".docx"]
     UPLOAD_DIR: str = "./data/documents"
+
+    # Text Processing
+    CHUNK_SIZE: int = 800  # tokens
+    CHUNK_OVERLAP: int = 100  # tokens
+    MAX_CONCURRENT_CHUNKS: int = 10
 
     # Security
     SECRET_KEY: str = Field(

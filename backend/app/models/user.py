@@ -34,6 +34,7 @@ class User(Base, TimestampMixin):
     documents = relationship("Document", back_populates="user", cascade="all, delete-orphan")
     annotations = relationship("Annotation", back_populates="user", cascade="all, delete-orphan")
     chat_messages = relationship("ChatMessage", back_populates="user", cascade="all, delete-orphan")
+    chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
     reading_sessions = relationship("ReadingSession", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:

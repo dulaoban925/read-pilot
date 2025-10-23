@@ -16,11 +16,17 @@ help:
 	@echo "  make db-init     - 初始化数据库"
 	@echo "  make db-migrate  - 创建数据库迁移"
 	@echo "  make db-upgrade  - 应用数据库迁移"
+	@echo "  make diagnose    - 诊断服务状态"
+	@echo "  make celery      - 启动 Celery Worker"
+	@echo "  make celery-flower - 启动 Celery Flower 监控面板"
+	@echo "  make celery-purge - 清空 Celery 任务队列"
+	@echo "  make celery-inspect - 查看 Celery Worker 状态"
+	@echo "  make celery-stats - 查看 Celery 统计信息"
 	@echo ""
 
 install:
 	@echo "📦 安装依赖..."
-	pip install -r requirements.txt || poetry install
+	poetry install
 
 dev:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -38,7 +44,7 @@ dev:
 	@echo "🛑 按 Ctrl+C 停止服务器"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	@poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 prod:
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -165,3 +171,34 @@ docker-compose-down:
 health:
 	@echo "❤️  检查服务健康状态..."
 	@curl -s http://localhost:8000/health | python3 -m json.tool || echo "❌ 服务未运行"
+
+# Celery 相关命令
+celery:
+	@echo "⚙️  启动 Celery Worker..."
+	@./start_celery.sh
+
+celery-flower:
+	@echo "🌸 启动 Celery Flower 监控面板..."
+	@echo "📊 访问地址: http://localhost:5555"
+	@poetry run celery -A app.tasks.celery_app flower --port=5555
+
+celery-purge:
+	@echo "⚠️  清空 Celery 任务队列..."
+	@read -p "确认清空所有待处理任务? [y/N]: " confirm; \
+	if [ "$$confirm" = "y" ]; then \
+		poetry run celery -A app.tasks.celery_app purge -f && echo "✅ 任务队列已清空!"; \
+	else \
+		echo "❌ 操作已取消"; \
+	fi
+
+celery-inspect:
+	@echo "🔍 查看 Celery Worker 状态..."
+	@poetry run celery -A app.tasks.celery_app inspect active
+
+celery-stats:
+	@echo "📊 查看 Celery 统计信息..."
+	@poetry run celery -A app.tasks.celery_app inspect stats
+
+diagnose:
+	@echo "🔍 诊断服务状态..."
+	@./diagnose.sh

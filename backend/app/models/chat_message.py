@@ -27,7 +27,7 @@ class ChatMessage(Base, TimestampMixin):
 
     # AI response metadata (for role='assistant')
     # Example: {"model": "gpt-4", "tokens": 150, "sources": [...]}
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    message_metadata: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Source references for AI answers (JSON array)
     # Example: [{"text": "...", "page": 5, "position": {...}}, ...]

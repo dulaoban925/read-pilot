@@ -33,7 +33,7 @@ class ReadingSession(Base, TimestampMixin):
 
     # Session metadata (JSON)
     # Example: {"device": "desktop", "browser": "chrome"}
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
+    session_metadata: Mapped[Optional[dict]] = mapped_column(JSON, default=dict)
 
     # Relationships
     user = relationship("User", back_populates="reading_sessions")

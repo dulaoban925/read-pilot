@@ -76,23 +76,18 @@ frontend/
 │   │   └── NoteItem.tsx
 │   ├── profile/          # Profile components
 │   │   └── ReadingTrendChart.tsx
-│   └── ui/               # Reusable UI components (Radix UI)
+│   └── ui/               # Reusable UI components (shadcn/ui style)
 │
 ├── lib/                   # Utility libraries
-│   ├── api/              # API client and endpoints
-│   │   ├── client.ts     # Axios instance
-│   │   ├── documents.ts  # Documents API
-│   │   ├── users.ts      # Users API
-│   │   └── chat.ts       # Chat API
-│   ├── store/            # Zustand state management
-│   │   ├── document-store.ts
-│   │   ├── user-store.ts
-│   │   └── chat-store.ts
+│   ├── api.ts            # API client (Axios instance with interceptors)
+│   ├── auth.ts           # Authentication utilities
 │   ├── hooks/            # Custom React hooks
-│   │   ├── useDocument.ts
-│   │   ├── useChat.ts
-│   │   └── useAuth.ts
-│   └── utils/            # Utility functions
+│   │   └── useDocuments.ts
+│   └── utils.ts          # Utility functions (cn, formatters)
+│
+├── stores/               # Zustand state management
+│   ├── authStore.ts      # Authentication state
+│   └── documentStore.ts  # Document state
 │
 ├── public/               # Static assets
 ├── styles/               # Global styles
@@ -144,24 +139,23 @@ touch app/my-page/page.tsx
 ### Working with API
 
 ```typescript
-// Use API client from lib/api
-import { documentsApi } from '@/lib/api/documents';
+// Use TanStack Query hooks from lib/hooks
+import { useDocuments } from '@/lib/hooks/useDocuments';
 
 // In component
-const { data, error, isLoading } = useQuery({
-  queryKey: ['documents'],
-  queryFn: () => documentsApi.getDocuments()
-});
+const { data, isLoading, error } = useDocuments(page, pageSize);
 ```
 
 ### State Management
 
 ```typescript
 // Use Zustand stores
-import { useDocumentStore } from '@/lib/store/document-store';
+import { useDocumentStore } from '@/stores/documentStore';
+import { useAuthStore } from '@/stores/authStore';
 
 function MyComponent() {
   const { currentDocument, setCurrentDocument } = useDocumentStore();
+  const { user, isAuthenticated } = useAuthStore();
 
   // Use state...
 }
@@ -182,17 +176,20 @@ The project uses Tailwind CSS 4.0 for styling:
 </div>
 ```
 
-### Radix UI Components
+### shadcn/ui Components
 
-Use Radix UI for accessible, unstyled components:
+Use shadcn/ui style components with Radix UI primitives:
 
 ```typescript
-import { Button } from '@/components/ui/button';
-import { Dialog } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 
-<Button variant="primary" size="md" onClick={handleClick}>
+<Button variant="default" size="default" onClick={handleClick}>
   Click Me
 </Button>
+
+<Input label="Email" type="email" placeholder="your@email.com" />
 ```
 
 ## Code Quality

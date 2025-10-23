@@ -1,0 +1,1122 @@
+openapi: 3.1.0
+info:
+  title: ReadPilot Core Reading Experience API
+  description: |
+    ReadPilot 核心阅读体验 API 规范文档
+
+    ## 功能覆盖
+    - 用户认证和授权
+    - 文档上传和管理
+    - 文档摘要生成
+    - AI 问答交互
+    - 阅读历史跟踪
+
+    ## 认证方式
+    使用 JWT Bearer Token 认证，除登录和注册接口外，所有接口都需要在 Header 中携带：
+    ```
+    Authorization: Bearer {access_token}
+    ```
+  version: 1.0.0
+  contact:
+    name: ReadPilot API Support
+    email: support@readpilot.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发环境
+  - url: https://api-dev.readpilot.com
+    description: 开发环境
+  - url: https://api.readpilot.com
+    description: 生产环境
+
+tags:
+  - name: Authentication
+    description: 用户认证和授权
+  - name: Documents
+    description: 文档管理
+  - name: Chat
+    description: AI 对话交互
+  - name: Users
+    description: 用户信息管理
+
+paths:
+  # ==================== Authentication ====================
+  /api/v1/auth/register:
+    post:
+      tags: [Authentication]
+      summary: 用户注册
+      description: 创建新用户账户
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, display_name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                display_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                  example: 张三
+      responses:
+        '201':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  access_token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  refresh_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: bearer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: 邮箱已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: EMAIL_EXISTS
+                message: 该邮箱已被注册
+
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: 用户登录
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: bearer
+                  expires_in:
+                    type: integer
+                    example: 900
+                    description: access_token 有效期（秒）
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: 刷新 Token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: Token 刷新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  token_type:
+                    type: string
+                    example: bearer
+                  expires_in:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Authentication]
+      summary: 用户登出
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: 登出成功
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== Documents ====================
+  /api/v1/documents:
+    post:
+      tags: [Documents]
+      summary: 上传文档
+      description: |
+        上传新文档，支持格式：PDF, EPUB, DOCX, Markdown
+
+        **限制**:
+        - 文件大小: 最大 50MB
+        - 页数: 最多 1000 页
+      operationId: uploadDocument
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                  description: 文档标题（可选，默认使用文件名）
+            encoding:
+              file:
+                contentType: application/pdf, application/epub+zip, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/markdown
+      responses:
+        '201':
+          description: 文档上传成功，开始处理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: 文件过大
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: FILE_TOO_LARGE
+                message: 文件大小超过 50MB 限制
+
+    get:
+      tags: [Documents]
+      summary: 获取文档列表
+      operationId: listDocuments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          description: 按处理状态筛选
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [uploaded_at, title]
+            default: uploaded_at
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: 文档列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Document'
+                  total:
+                    type: integer
+                    example: 150
+                  page:
+                    type: integer
+                    example: 1
+                  page_size:
+                    type: integer
+                    example: 20
+                  has_next:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/documents/{document_id}:
+    get:
+      tags: [Documents]
+      summary: 获取文档详情
+      operationId: getDocument
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 文档详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Documents]
+      summary: 删除文档
+      operationId: deleteDocument
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 删除成功
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/documents/{document_id}/summary:
+    get:
+      tags: [Documents]
+      summary: 获取文档摘要
+      operationId: getDocumentSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: depth
+          in: query
+          description: 摘要深度
+          schema:
+            type: string
+            enum: [brief, detailed]
+            default: detailed
+      responses:
+        '200':
+          description: 文档摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Summary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 文档不存在或摘要未生成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Documents]
+      summary: 生成文档摘要
+      description: |
+        请求生成或重新生成文档摘要
+
+        **处理时间**: 10 页文档约需 10 秒
+      operationId: generateDocumentSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                depth:
+                  type: string
+                  enum: [brief, detailed]
+                  default: detailed
+                force_regenerate:
+                  type: boolean
+                  default: false
+                  description: 是否强制重新生成（忽略缓存）
+      responses:
+        '202':
+          description: 摘要生成任务已创建
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: processing
+                  estimated_time:
+                    type: integer
+                    example: 10
+                    description: 预计完成时间（秒）
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /api/v1/documents/{document_id}/download:
+    get:
+      tags: [Documents]
+      summary: 下载原始文档
+      operationId: downloadDocument
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 文档文件
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/epub+zip:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== Chat ====================
+  /api/v1/chat/sessions:
+    post:
+      tags: [Chat]
+      summary: 创建对话会话
+      operationId: createChatSession
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document_id:
+                  type: string
+                  format: uuid
+                  description: 关联文档（可选，不提供则为通用对话）
+                title:
+                  type: string
+                  example: 关于第三章的讨论
+      responses:
+        '201':
+          description: 会话创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: 关联文档不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Chat]
+      summary: 获取对话会话列表
+      operationId: listChatSessions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: document_id
+          in: query
+          description: 筛选特定文档的会话
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 会话列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChatSession'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  page_size:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/chat/sessions/{session_id}:
+    get:
+      tags: [Chat]
+      summary: 获取会话详情
+      operationId: getChatSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 会话详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSession'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Chat]
+      summary: 删除会话
+      operationId: deleteChatSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: 删除成功
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/chat/sessions/{session_id}/messages:
+    post:
+      tags: [Chat]
+      summary: 发送消息
+      description: |
+        向会话发送用户消息并获取 AI 回复
+
+        **处理时间**: 通常 3-5 秒
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  minLength: 1
+                  maxLength: 10000
+                  example: 请解释一下流水线的概念
+                stream:
+                  type: boolean
+                  default: false
+                  description: 是否使用流式响应
+      responses:
+        '200':
+          description: AI 回复（非流式）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_message:
+                    $ref: '#/components/schemas/Message'
+                  assistant_message:
+                    $ref: '#/components/schemas/Message'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+    get:
+      tags: [Chat]
+      summary: 获取消息历史
+      operationId: listMessages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 200
+        - name: before_id
+          in: query
+          description: 分页游标（获取该消息之前的消息）
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 消息列表（按时间倒序）
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  has_more:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ==================== Users ====================
+  /api/v1/users/me:
+    get:
+      tags: [Users]
+      summary: 获取当前用户信息
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags: [Users]
+      summary: 更新用户信息
+      operationId: updateCurrentUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name:
+                  type: string
+                  minLength: 2
+                  maxLength: 100
+                preferences:
+                  type: object
+                  properties:
+                    language:
+                      type: string
+                      enum: [zh-CN, en-US]
+                    ai_provider:
+                      type: string
+                      enum: [openai, anthropic]
+                    theme:
+                      type: string
+                      enum: [light, dark, auto]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/users/me/stats:
+    get:
+      tags: [Users]
+      summary: 获取阅读统计
+      operationId: getUserStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 用户阅读统计
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_documents:
+                    type: integer
+                    example: 42
+                  completed_documents:
+                    type: integer
+                    example: 15
+                  total_reading_time:
+                    type: integer
+                    example: 86400
+                    description: 总阅读时间（秒）
+                  total_questions:
+                    type: integer
+                    example: 128
+                  recent_documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReadingHistory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ==================== Components ====================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        preferences:
+          type: object
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        last_login_at:
+          type: string
+          format: date-time
+      example:
+        id: 550e8400-e29b-41d4-a716-446655440000
+        email: user@example.com
+        display_name: 张三
+        preferences:
+          language: zh-CN
+          ai_provider: openai
+        is_active: true
+        created_at: 2025-10-22T10:00:00Z
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        file_type:
+          type: string
+          enum: [pdf, epub, docx, markdown]
+        file_size:
+          type: integer
+          format: int64
+        page_count:
+          type: integer
+        word_count:
+          type: integer
+        language:
+          type: string
+        processing_status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        processing_error:
+          type: string
+        uploaded_at:
+          type: string
+          format: date-time
+        processed_at:
+          type: string
+          format: date-time
+      example:
+        id: 660e8400-e29b-41d4-a716-446655440001
+        user_id: 550e8400-e29b-41d4-a716-446655440000
+        title: 深入理解计算机系统.pdf
+        file_type: pdf
+        file_size: 15728640
+        page_count: 856
+        word_count: 320000
+        language: zh-CN
+        processing_status: completed
+        uploaded_at: 2025-10-22T10:30:00Z
+        processed_at: 2025-10-22T10:31:00Z
+
+    Summary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+          format: uuid
+        abstract:
+          type: string
+        key_insights:
+          type: array
+          items:
+            type: string
+        main_concepts:
+          type: array
+          items:
+            type: string
+        document_type:
+          type: string
+          enum: [technical, narrative, academic]
+        depth_level:
+          type: string
+          enum: [brief, detailed]
+        model_used:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+      example:
+        id: 880e8400-e29b-41d4-a716-446655440003
+        document_id: 660e8400-e29b-41d4-a716-446655440001
+        abstract: 本书从程序员的视角详细阐述了计算机系统的本质概念...
+        key_insights:
+          - 计算机系统不仅仅是硬件和软件的简单堆砌
+          - 理解底层系统如何工作可以帮助程序员编写更高效的程序
+        main_concepts:
+          - 信息的表示和处理
+          - 处理器体系结构
+          - 存储器层次结构
+        document_type: technical
+        depth_level: detailed
+        model_used: gpt-4o-mini
+        generated_at: 2025-10-22T10:32:00Z
+
+    ChatSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      example:
+        id: 990e8400-e29b-41d4-a716-446655440004
+        user_id: 550e8400-e29b-41d4-a716-446655440000
+        document_id: 660e8400-e29b-41d4-a716-446655440001
+        title: 关于第三章处理器体系结构的讨论
+        message_count: 12
+        created_at: 2025-10-22T11:00:00Z
+        updated_at: 2025-10-22T11:15:00Z
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        session_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              chunk_id:
+                type: string
+                format: uuid
+              page:
+                type: integer
+              excerpt:
+                type: string
+        model_used:
+          type: string
+        token_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+      example:
+        id: bb0e8400-e29b-41d4-a716-446655440006
+        session_id: 990e8400-e29b-41d4-a716-446655440004
+        role: assistant
+        content: 流水线（Pipelining）是一种提高处理器性能的重要技术...
+        sources:
+          - chunk_id: 770e8400-e29b-41d4-a716-446655440002
+            page: 256
+            excerpt: 流水线技术通过重叠执行多条指令的不同阶段...
+        model_used: gpt-4o-mini
+        token_count: 450
+        created_at: 2025-10-22T11:00:05Z
+
+    ReadingHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        document_id:
+          type: string
+          format: uuid
+        document_title:
+          type: string
+        duration_seconds:
+          type: integer
+        last_page:
+          type: integer
+        progress_percentage:
+          type: number
+          format: float
+        completed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      example:
+        id: cc0e8400-e29b-41d4-a716-446655440007
+        user_id: 550e8400-e29b-41d4-a716-446655440000
+        document_id: 660e8400-e29b-41d4-a716-446655440001
+        document_title: 深入理解计算机系统.pdf
+        duration_seconds: 7200
+        last_page: 256
+        progress_percentage: 29.9
+        completed: false
+        created_at: 2025-10-22T10:35:00Z
+        updated_at: 2025-10-22T12:35:00Z
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          example: DOCUMENT_NOT_FOUND
+        message:
+          type: string
+          example: 文档不存在
+        details:
+          type: object
+          description: 额外的错误详情（可选）
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: VALIDATION_ERROR
+            message: 请求参数不符合要求
+            details:
+              field: email
+              error: 邮箱格式不正确
+
+    Unauthorized:
+      description: 未授权（Token 无效或过期）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHORIZED
+            message: Token 无效或已过期
+
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: NOT_FOUND
+            message: 请求的资源不存在
+
+    RateLimited:
+      description: 请求频率超限
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: RATE_LIMITED
+            message: 请求过于频繁，请稍后再试
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: 速率限制阈值
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: 剩余请求次数
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: 限制重置时间（Unix 时间戳）

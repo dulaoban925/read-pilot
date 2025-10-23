@@ -32,7 +32,7 @@ class AISummary(Base, TimestampMixin):
 
     # AI metadata (JSON)
     # Example: {"model": "gpt-4", "tokens": 500, "cost": 0.01}
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON)
+    ai_metadata: Mapped[Optional[dict]] = mapped_column(JSON)
 
     # Target section (for chapter/section summaries)
     target_section: Mapped[Optional[str]] = mapped_column(String(255))

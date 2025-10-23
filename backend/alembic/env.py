@@ -17,7 +17,10 @@ from app.models import (  # noqa: F401
     AISummary,
     Annotation,
     ChatMessage,
+    ChatSession,
     Document,
+    DocumentChunk,
+    Message,
     ReadingSession,
     User,
 )

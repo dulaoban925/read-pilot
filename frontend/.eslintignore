@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+*.min.js
+*.config.js
+next.config.ts
+tailwind.config.js
+postcss.config.mjs
